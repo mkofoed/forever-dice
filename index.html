@@ -541,7 +541,7 @@ const FACTION_COLOR = { alliance: "#a9c3ff", horde: "#ffab9f" };
 const KEY = "forever-terningen-v1";
 const comboKey = (r, c) => `x:${r}|${c}`;
 
-const state = { off: new Set(), rollGender: true, mode: "combo", last: null, history: [] };
+const state = { off: new Set(), rollGender: true, mode: "class", last: null, history: [] };
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) || "null");
   if (saved) { state.off = new Set(saved.off || []); state.rollGender = saved.rollGender !== false; if (["combo","race","class"].includes(saved.mode)) state.mode = saved.mode; }
