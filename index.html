@@ -295,6 +295,45 @@ h1 {
 .legend .l-off { color: #ffd9d4; background: rgba(200,53,43,.55); }
 .legend .l-dead { border: 1px dashed #5a5360; }
 
+.combos-panel { padding: 0; }
+.combos-panel summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 16px; font-family: var(--display); font-weight: 700; font-size: .9rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold);
+}
+.combos-panel summary::-webkit-details-marker { display: none; }
+.combos-panel summary::before {
+  content: ""; width: 8px; height: 8px; flex: none; border-right: 2px solid var(--gold); border-bottom: 2px solid var(--gold);
+  transform: rotate(-45deg); transition: transform .2s; margin-right: 4px;
+}
+.combos-panel[open] summary::before { transform: rotate(45deg); }
+.combos-panel summary:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.sum-title { flex: 1; }
+.sum-count { font-family: var(--body); font-size: .82rem; letter-spacing: 0; text-transform: none; color: var(--muted); font-weight: 500; }
+.sum-count.has { color: #ffd9d4; background: rgba(200,53,43,.5); padding: 2px 8px; border-radius: 999px; }
+.combos-body { padding: 0 16px 16px; display: grid; gap: 12px; }
+.matrix-wrap { overflow-x: auto; }
+.matrix { border-collapse: separate; border-spacing: 4px; margin: 0 auto; }
+.matrix th { font-weight: 500; }
+.matrix thead th { padding: 0 0 4px; }
+.matrix thead .ci { display: grid; justify-items: center; gap: 2px; color: var(--c); font-family: var(--display); font-size: .7rem; letter-spacing: .03em; }
+.matrix thead .ci svg { width: 20px; height: 20px; }
+.matrix tbody th { text-align: left; padding-right: 10px; white-space: nowrap; font-size: .9rem; }
+.matrix tbody th small { color: var(--muted); font-size: .72rem; margin-left: 4px; }
+.matrix th.alliance-r { color: var(--alliance-hi); }
+.matrix th.horde-r { color: var(--horde-hi); }
+.matrix tr.split th, .matrix tr.split td { padding-top: 10px; }
+.cell {
+  width: 38px; height: 30px; border-radius: 3px; cursor: pointer; display: grid; place-items: center;
+  background: rgba(0,0,0,.35); border: 1px solid #3a3340; color: var(--c);
+}
+.cell::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+.cell:hover { border-color: var(--gold); }
+.cell:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.cell.ex { background: rgba(200,53,43,.35); border-color: rgba(200,53,43,.8); color: #ffd9d4; }
+.cell.ex::before { content: "✕"; width: auto; height: auto; background: none; box-shadow: none; font-weight: 700; font-size: .8rem; }
+.cell.muted { opacity: .3; }
+.matrix td.na { text-align: center; color: #3a3340; }
+.btn.small, .chip.small { font-size: .75rem; padding: 4px 12px; }
 .foot { display: grid; gap: 18px; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); }
 @media (max-width: 760px) { .foot { grid-template-columns: minmax(0,1fr); } }
 .foot h2 { color: var(--gold); margin-bottom: 10px; }
@@ -410,6 +449,18 @@ h1 {
     <div class="class-row" id="classes"></div>
   </section>
 
+  <details class="panel combos-panel" id="combosPanel">
+    <summary>
+      <span class="sum-title">Exclude specific combos</span>
+      <span class="sum-count" id="comboCount"></span>
+    </summary>
+    <div class="combos-body">
+      <p class="hint">Click a combination to never roll it, without excluding the whole race or class. Click it again to bring it back.</p>
+      <div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
+      <div><button class="chip" type="button" id="clearCombos">Clear combo exclusions</button></div>
+    </div>
+  </details>
+
   <section class="foot">
     <div class="panel">
       <h2>Recent rolls</h2>
@@ -474,6 +525,7 @@ const WH = "https://www.wowhead.com/forever";
 const FACTION_NAME = { alliance: "Alliance", horde: "Horde" };
 const FACTION_COLOR = { alliance: "#a9c3ff", horde: "#ffab9f" };
 const KEY = "forever-terningen-v1";
+const comboKey = (r, c) => `x:${r}|${c}`;
 
 const state = { off: new Set(), rollGender: true, last: null, history: [] };
 try {
@@ -514,12 +566,46 @@ function buildFaction(f) {
 }
 buildFaction("alliance"); buildFaction("horde");
 
+buildMatrix();
 GENDERS.forEach(g => $("genders").append(makeOpt("g:" + g.id, g.sym, g.name)));
 CLASSES.forEach(c => {
   const b = makeOpt("c:" + c.id, icon(c.id), c.name, c.role);
   b.style.setProperty("--c", c.color);
   $("classes").append(b);
 });
+
+function buildMatrix() {
+  const t = $("matrix");
+  let h = "<thead><tr><th></th>" + CLASSES.map(c => `<th scope="col"><span class="ci" style="--c:${c.color}">${icon(c.id)}${c.name}</span></th>`).join("") + "</tr></thead><tbody>";
+  RACES.forEach((r, i) => {
+    const split = i > 0 && RACES[i - 1].faction !== r.faction ? ' class="split"' : "";
+    h += `<tr${split}><th scope="row" class="${r.faction}-r">${r.name}${r.sub ? `<small>${r.sub}</small>` : ""}</th>`;
+    h += CLASSES.map(c => r.classes.includes(c.id)
+      ? `<td><button class="cell" type="button" style="--c:${c.color};color:${c.color}" data-combo="${comboKey(r.id, c.id)}" aria-label="${r.name}${r.sub ? " " + r.sub : ""} ${c.name}"></button></td>`
+      : `<td class="na" aria-hidden="true">·</td>`).join("");
+    h += "</tr>";
+  });
+  t.innerHTML = h + "</tbody>";
+  t.addEventListener("click", (e) => {
+    const b = e.target.closest(".cell"); if (!b || rolling) return;
+    toggle(b.dataset.combo);
+  });
+}
+function renderMatrix() {
+  let n = 0;
+  document.querySelectorAll(".cell").forEach(b => {
+    const k = b.dataset.combo, [r, c] = k.slice(2).split("|");
+    const ex = state.off.has(k); if (ex) n++;
+    b.classList.toggle("ex", ex);
+    b.style.color = ex ? "" : CLASSES.find(x => x.id === c).color;
+    b.classList.toggle("muted", state.off.has("r:" + r) || state.off.has("c:" + c));
+    b.setAttribute("aria-pressed", String(ex));
+    b.title = ex ? "Excluded combo, click to bring it back" : "Click to never roll this combo";
+  });
+  const el = $("comboCount");
+  el.textContent = n ? `${n} excluded` : "None excluded";
+  el.classList.toggle("has", n > 0);
+}
 
 function toggle(key) {
   state.off.has(key) ? state.off.delete(key) : state.off.add(key);
@@ -530,7 +616,7 @@ function combos() {
   const out = [];
   for (const r of RACES) {
     if (state.off.has("r:" + r.id)) continue;
-    for (const c of r.classes) if (!state.off.has("c:" + c)) out.push({ race: r, cls: CLASSES.find(x => x.id === c) });
+    for (const c of r.classes) if (!state.off.has("c:" + c) && !state.off.has(comboKey(r.id, c))) out.push({ race: r, cls: CLASSES.find(x => x.id === c) });
   }
   return out;
 }
@@ -550,16 +636,17 @@ function render() {
   const onRaces = RACES.filter(r => !state.off.has("r:" + r.id));
   CLASSES.forEach(c => {
     const k = "c:" + c.id;
-    const dead = !state.off.has(k) && !onRaces.some(r => r.classes.includes(c.id));
+    const dead = !state.off.has(k) && !onRaces.some(r => r.classes.includes(c.id) && !state.off.has(comboKey(r.id, c.id)));
     btns[k].classList.toggle("dead", dead);
     if (dead) btns[k].title = "None of your selected races can play this class";
   });
   RACES.forEach(r => {
     const k = "r:" + r.id;
-    const dead = !state.off.has(k) && !r.classes.some(c => !state.off.has("c:" + c));
+    const dead = !state.off.has(k) && !r.classes.some(c => !state.off.has("c:" + c) && !state.off.has(comboKey(r.id, c)));
     btns[k].classList.toggle("dead", dead);
     if (dead) btns[k].title = "None of your selected classes fit this race";
   });
+  renderMatrix();
   const n = combos().length;
   $("count").innerHTML = `<b>${n}</b> possible combinations`;
 }
@@ -734,7 +821,13 @@ async function roll() {
       <a href="${WH}/class=${target.cls.wh}/${target.cls.id}" target="_blank" rel="noopener">${target.cls.name} on Wowhead</a>
       <a href="${WH}/talent-calc/${target.cls.id}" target="_blank" rel="noopener">Talent calculator</a>
       <a href="${WH}/${target.race.wh}" target="_blank" rel="noopener">${target.race.name}${target.race.wh.startsWith("guide") ? " guide" : " on Wowhead"}</a>
-    </span>`;
+    </span>
+    <span><button class="chip small" type="button" id="exCombo">Never roll this combo</button></span>`;
+  $("exCombo").addEventListener("click", (e) => {
+    state.off.add(comboKey(target.race.id, target.cls.id)); save(); render();
+    e.target.disabled = true; e.target.textContent = "Excluded";
+    toast(`${target.race.name} ${target.cls.name} won't come up again`);
+  });
   $("copy").disabled = false;
 
   const r = die.getBoundingClientRect();
@@ -769,6 +862,11 @@ document.querySelectorAll(".chip[data-all]").forEach(b => b.addEventListener("cl
   list.forEach(k => b.dataset.on === "1" ? state.off.delete(k) : state.off.add(k));
   save(); render();
 }));
+$("clearCombos").addEventListener("click", () => {
+  if (rolling) return;
+  [...state.off].filter(k => k.startsWith("x:")).forEach(k => state.off.delete(k));
+  save(); render();
+});
 $("reset").addEventListener("click", () => { if (rolling) return; state.off.clear(); save(); render(); });
 $("rollGender").addEventListener("change", (e) => { state.rollGender = e.target.checked; save(); render(); });
 document.addEventListener("keydown", (e) => {
