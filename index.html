@@ -255,7 +255,13 @@ h1 {
 }
 .chip:hover { border-color: var(--gold); color: var(--gold-hi); }
 .chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.q-tip { color: var(--muted); font-size: .85rem; font-style: italic; }
+.q-tip { color: var(--muted); font-size: .85rem; font-style: italic; flex-basis: 100%; text-align: center; }
+.seg { display: inline-flex; border: 1px solid var(--edge); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,.35); }
+.seg-btn { font: 700 .78rem var(--display); letter-spacing: .04em; color: var(--muted); background: transparent; border: 0; padding: 5px 12px; cursor: pointer; }
+.seg-btn + .seg-btn { border-left: 1px solid var(--edge); }
+.seg-btn:hover { color: var(--gold-hi); }
+.seg-btn[aria-checked="true"] { color: #2a1a04; background: linear-gradient(180deg, var(--gold-hi), var(--gold) 60%, #b8862e); }
+.seg-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .btn {
   font: 700 .82rem var(--display); letter-spacing: .06em; color: var(--gold-hi); cursor: pointer;
@@ -376,7 +382,15 @@ h1 {
   <div class="quick" role="group" aria-label="Quick select">
     <span class="q-group"><span class="q-label">Races</span><button class="chip" type="button" data-all="r" data-on="1">All</button><button class="chip" type="button" data-all="r" data-on="0">None</button></span>
     <span class="q-group"><span class="q-label">Classes</span><button class="chip" type="button" data-all="c" data-on="1">All</button><button class="chip" type="button" data-all="c" data-on="0">None</button></span>
-    <span class="q-tip">Pick None, then click the few you're torn between.</span>
+    <span class="q-group" role="radiogroup" aria-label="Odds">
+      <span class="q-label">Odds</span>
+      <span class="seg">
+        <button class="seg-btn" type="button" role="radio" data-mode="combo" title="Every valid race and class combination has the same chance">Every combo</button>
+        <button class="seg-btn" type="button" role="radio" data-mode="race" title="Pick a random race first, then one of its classes">Every race</button>
+        <button class="seg-btn" type="button" role="radio" data-mode="class" title="Pick a random class first, then a race that can play it">Every class</button>
+      </span>
+    </span>
+    <span class="q-tip" id="modeTip"></span>
   </div>
 
   <section class="creator">
@@ -469,7 +483,7 @@ h1 {
     <div class="panel">
       <h2>How it works</h2>
       <p class="hint">Click a <b>race</b>, <b>class</b> or <b>body type</b> to exclude it. Click <b>Alliance</b> or <b>Horde</b> to toggle the whole faction.</p>
-      <p class="hint">Every valid race and class combination has the same chance. Skyborne comes in two versions, High Order (Alliance) and Windshaper (Horde), each with its own classes.</p>
+      <p class="hint">Choose the odds at the top: <b>Every combo</b> gives each valid race and class combination the same chance, so races and classes with many options come up more often. <b>Every race</b> picks a race first, then one of its classes. <b>Every class</b> picks a class first, then a race that can play it. Skyborne comes in two versions, High Order (Alliance) and Windshaper (Horde), each with its own classes.</p>
       <p class="hint">Your exclusions are remembered in your own browser.</p>
       <p class="hint">Combinations follow Wowhead's <a href="https://www.wowhead.com/forever/guide/new-race-class-combinations" target="_blank" rel="noopener">race and class combinations</a> guide. See also <a href="https://www.wowhead.com/forever/guide/skyborne-race-overview" target="_blank" rel="noopener">Skyborne overview</a> and <a href="https://www.wowhead.com/forever/spells/racial-traits" target="_blank" rel="noopener">racial traits</a>. Fan-made, not affiliated with Blizzard.</p>
     </div>
@@ -527,12 +541,12 @@ const FACTION_COLOR = { alliance: "#a9c3ff", horde: "#ffab9f" };
 const KEY = "forever-terningen-v1";
 const comboKey = (r, c) => `x:${r}|${c}`;
 
-const state = { off: new Set(), rollGender: true, last: null, history: [] };
+const state = { off: new Set(), rollGender: true, mode: "combo", last: null, history: [] };
 try {
   const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-  if (saved) { state.off = new Set(saved.off || []); state.rollGender = saved.rollGender !== false; }
+  if (saved) { state.off = new Set(saved.off || []); state.rollGender = saved.rollGender !== false; if (["combo","race","class"].includes(saved.mode)) state.mode = saved.mode; }
 } catch (e) {}
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ off: [...state.off], rollGender: state.rollGender })); } catch (e) {} };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ off: [...state.off], rollGender: state.rollGender, mode: state.mode })); } catch (e) {} };
 
 const $ = (id) => document.getElementById(id);
 const btns = {};
@@ -612,6 +626,22 @@ function toggle(key) {
   save(); render();
 }
 
+function pickByMode(pool) {
+  if (state.mode === "combo") return pick(pool);
+  const keyOf = state.mode === "race" ? (p) => p.race.id : (p) => p.cls.id;
+  const groups = [...new Set(pool.map(keyOf))];
+  const g = pick(groups);
+  return pick(pool.filter(p => keyOf(p) === g));
+}
+const MODE_TIP = {
+  combo: "Each valid combo has the same chance. Pick None above, then click the few you're torn between.",
+  race: "Each available race has the same chance, then a random class it can play.",
+  class: "Each available class has the same chance, then a random race that can play it.",
+};
+function renderMode() {
+  document.querySelectorAll(".seg-btn").forEach(b => b.setAttribute("aria-checked", String(b.dataset.mode === state.mode)));
+  $("modeTip").textContent = MODE_TIP[state.mode];
+}
 function combos() {
   const out = [];
   for (const r of RACES) {
@@ -647,6 +677,7 @@ function render() {
     if (dead) btns[k].title = "None of your selected classes fit this race";
   });
   renderMatrix();
+  renderMode();
   const n = combos().length;
   $("count").innerHTML = `<b>${n}</b> possible combinations`;
 }
@@ -756,7 +787,7 @@ async function roll() {
     return;
   }
   rolling = true;
-  const target = pick(pool);
+  const target = pickByMode(pool);
   const gender = state.rollGender ? pick(gPool) : null;
   const die = $("die");
   state.last = null; render(); clearMarks();
@@ -861,6 +892,10 @@ document.querySelectorAll(".chip[data-all]").forEach(b => b.addEventListener("cl
   const list = b.dataset.all === "r" ? RACES.map(r => "r:" + r.id) : CLASSES.map(c => "c:" + c.id);
   list.forEach(k => b.dataset.on === "1" ? state.off.delete(k) : state.off.add(k));
   save(); render();
+}));
+document.querySelectorAll(".seg-btn").forEach(b => b.addEventListener("click", () => {
+  if (rolling) return;
+  state.mode = b.dataset.mode; save(); render();
 }));
 $("clearCombos").addEventListener("click", () => {
   if (rolling) return;
