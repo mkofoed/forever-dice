@@ -227,6 +227,12 @@ h1 {
 @keyframes reveal { from { transform: scale(.85); opacity: 0; letter-spacing: .1em; } to { transform: scale(1); opacity: 1; } }
 @keyframes flash { from { opacity: 1; } to { opacity: 0; } }
 
+.links { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: .85rem; }
+.links a, .hint a { color: var(--gold); text-decoration: none; border-bottom: 1px solid rgba(240,201,106,.35); }
+.links a:hover, .hint a:hover { color: var(--gold-hi); border-bottom-color: var(--gold-hi); }
+.links a::after { content: " ↗"; font-size: .8em; opacity: .7; }
+.history a { color: inherit; text-decoration: none; }
+.history a:hover { text-decoration: underline; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .btn {
   font: 700 .82rem var(--display); letter-spacing: .06em; color: var(--gold-hi); cursor: pointer;
@@ -370,6 +376,7 @@ h1 {
       <p class="hint">Click a <b>race</b>, <b>class</b> or <b>gender</b> to exclude it. Click <b>Alliance</b> or <b>Horde</b> to toggle the whole faction.</p>
       <p class="hint">Every valid race and class combination has the same chance. Skyborne comes in two versions, High Order (Alliance) and Windshaper (Horde), each with its own classes.</p>
       <p class="hint">Your exclusions are remembered in your own browser.</p>
+      <p class="hint">Combinations follow Wowhead's <a href="https://www.wowhead.com/forever/guide/new-race-class-combinations" target="_blank" rel="noopener">race and class combinations</a> guide. See also <a href="https://www.wowhead.com/forever/guide/skyborne-race-overview" target="_blank" rel="noopener">Skyborne overview</a> and <a href="https://www.wowhead.com/forever/spells/racial-traits" target="_blank" rel="noopener">racial traits</a>. Fan-made, not affiliated with Blizzard.</p>
     </div>
   </section>
 </div>
@@ -393,32 +400,33 @@ const EMBLEM = {
 };
 
 const CLASSES = [
-  { id: "warrior", name: "Warrior", color: "#C69B6D", role: "Tank · DPS" },
-  { id: "paladin", name: "Paladin", color: "#F48CBA", role: "Tank · Heal · DPS" },
-  { id: "hunter",  name: "Hunter",  color: "#AAD372", role: "Ranged DPS" },
-  { id: "rogue",   name: "Rogue",   color: "#FFF468", role: "Melee DPS" },
-  { id: "priest",  name: "Priest",  color: "#FFFFFF", role: "Heal · DPS" },
-  { id: "shaman",  name: "Shaman",  color: "#2E8BFF", role: "Heal · DPS" },
-  { id: "mage",    name: "Mage",    color: "#3FC7EB", role: "Ranged DPS" },
-  { id: "warlock", name: "Warlock", color: "#8788EE", role: "Ranged DPS" },
-  { id: "druid",   name: "Druid",   color: "#FF7C0A", role: "Tank · Heal · DPS" },
+  { id: "warrior", wh: 1, name: "Warrior", color: "#C69B6D", role: "Tank · DPS" },
+  { id: "paladin", wh: 2, name: "Paladin", color: "#F48CBA", role: "Tank · Heal · DPS" },
+  { id: "hunter", wh: 3,  name: "Hunter",  color: "#AAD372", role: "Ranged DPS" },
+  { id: "rogue", wh: 4,   name: "Rogue",   color: "#FFF468", role: "Melee DPS" },
+  { id: "priest", wh: 5,  name: "Priest",  color: "#FFFFFF", role: "Heal · DPS" },
+  { id: "shaman", wh: 7,  name: "Shaman",  color: "#2E8BFF", role: "Heal · DPS" },
+  { id: "mage", wh: 8,    name: "Mage",    color: "#3FC7EB", role: "Ranged DPS" },
+  { id: "warlock", wh: 9, name: "Warlock", color: "#8788EE", role: "Ranged DPS" },
+  { id: "druid", wh: 11,   name: "Druid",   color: "#FF7C0A", role: "Tank · Heal · DPS" },
 ];
 const RACES = [
-  { id: "human",     name: "Human",     faction: "alliance", abbr: "Hu", classes: ["warrior","paladin","hunter","rogue","priest","mage","warlock"] },
-  { id: "dwarf",     name: "Dwarf",     faction: "alliance", abbr: "Dw", classes: ["warrior","paladin","hunter","rogue","priest","shaman"] },
-  { id: "nightelf",  name: "Night Elf", faction: "alliance", abbr: "NE", classes: ["warrior","hunter","rogue","priest","druid"] },
-  { id: "gnome",     name: "Gnome",     faction: "alliance", abbr: "Gn", classes: ["warrior","rogue","priest","mage","warlock"] },
-  { id: "sky-a",     name: "Skyborne",  sub: "High Order", faction: "alliance", abbr: "Sk", classes: ["warrior","hunter","rogue","mage","druid"] },
-  { id: "orc",       name: "Orc",       faction: "horde", abbr: "Or", classes: ["warrior","hunter","rogue","shaman","mage","warlock"] },
-  { id: "undead",    name: "Undead",    faction: "horde", abbr: "Un", classes: ["warrior","paladin","rogue","priest","mage","warlock"] },
-  { id: "tauren",    name: "Tauren",    faction: "horde", abbr: "Ta", classes: ["warrior","hunter","shaman","druid"] },
-  { id: "troll",     name: "Troll",     faction: "horde", abbr: "Tr", classes: ["warrior","hunter","rogue","priest","shaman","mage","warlock"] },
-  { id: "sky-h",     name: "Skyborne",  sub: "Windshaper", faction: "horde", abbr: "Sk", classes: ["warrior","hunter","rogue","shaman","druid"] },
+  { id: "human", wh: "race=1/human",     name: "Human",     faction: "alliance", abbr: "Hu", classes: ["warrior","paladin","hunter","rogue","priest","mage","warlock"] },
+  { id: "dwarf", wh: "race=3/dwarf",     name: "Dwarf",     faction: "alliance", abbr: "Dw", classes: ["warrior","paladin","hunter","rogue","priest","shaman"] },
+  { id: "nightelf", wh: "race=4/night-elf",  name: "Night Elf", faction: "alliance", abbr: "NE", classes: ["warrior","hunter","rogue","priest","druid"] },
+  { id: "gnome", wh: "race=7/gnome",     name: "Gnome",     faction: "alliance", abbr: "Gn", classes: ["warrior","rogue","priest","mage","warlock"] },
+  { id: "sky-a", wh: "guide/skyborne-race-overview",     name: "Skyborne",  sub: "High Order", faction: "alliance", abbr: "Sk", classes: ["warrior","hunter","rogue","mage","druid"] },
+  { id: "orc", wh: "race=2/orc",       name: "Orc",       faction: "horde", abbr: "Or", classes: ["warrior","hunter","rogue","shaman","mage","warlock"] },
+  { id: "undead", wh: "race=5/undead",    name: "Undead",    faction: "horde", abbr: "Un", classes: ["warrior","paladin","rogue","priest","mage","warlock"] },
+  { id: "tauren", wh: "race=6/tauren",    name: "Tauren",    faction: "horde", abbr: "Ta", classes: ["warrior","hunter","shaman","druid"] },
+  { id: "troll", wh: "race=8/troll",     name: "Troll",     faction: "horde", abbr: "Tr", classes: ["warrior","hunter","rogue","priest","shaman","mage","warlock"] },
+  { id: "sky-h", wh: "guide/skyborne-race-overview",     name: "Skyborne",  sub: "Windshaper", faction: "horde", abbr: "Sk", classes: ["warrior","hunter","rogue","shaman","druid"] },
 ];
 const GENDERS = [
   { id: "male", name: "Male", sym: "♂" },
   { id: "female", name: "Female", sym: "♀" },
 ];
+const WH = "https://www.wowhead.com/forever";
 const FACTION_NAME = { alliance: "Alliance", horde: "Horde" };
 const FACTION_COLOR = { alliance: "#a9c3ff", horde: "#ffab9f" };
 const KEY = "forever-terningen-v1";
@@ -610,7 +618,12 @@ async function roll() {
   res.innerHTML = `
     <span class="pre">Your fate is sealed</span>
     <span class="line">${gender ? `<span style="color:var(--parch)">${gender.name}</span> ` : ""}<span style="color:${FACTION_COLOR[target.race.faction]}">${raceName}</span> <span style="color:${target.cls.color}">${target.cls.name}</span></span>
-    <span class="meta">${EMBLEM[target.race.faction]} ${FACTION_NAME[target.race.faction]} · ${target.cls.role}</span>`;
+    <span class="meta">${EMBLEM[target.race.faction]} ${FACTION_NAME[target.race.faction]} · ${target.cls.role}</span>
+    <span class="links">
+      <a href="${WH}/class=${target.cls.wh}/${target.cls.id}" target="_blank" rel="noopener">${target.cls.name} on Wowhead</a>
+      <a href="${WH}/talent-calc/${target.cls.id}" target="_blank" rel="noopener">Talent calculator</a>
+      <a href="${WH}/${target.race.wh}" target="_blank" rel="noopener">${target.race.name}${target.race.wh.startsWith("guide") ? " guide" : " on Wowhead"}</a>
+    </span>`;
   $("copy").disabled = false;
 
   const r = die.getBoundingClientRect();
@@ -619,7 +632,7 @@ async function roll() {
   state.history.unshift(state.last);
   state.history = state.history.slice(0, 6);
   $("history").innerHTML = state.history.map((h, i) =>
-    `<li><span class="n">${state.history.length - i}.</span>${EMBLEM[h.race.faction]}<span>${h.gender ? h.gender.name + " " : ""}${h.race.name}${h.race.sub ? " (" + h.race.sub + ")" : ""} <b style="color:${h.cls.color}">${h.cls.name}</b></span></li>`).join("");
+    `<li><span class="n">${state.history.length - i}.</span>${EMBLEM[h.race.faction]}<span>${h.gender ? h.gender.name + " " : ""}${h.race.name}${h.race.sub ? " (" + h.race.sub + ")" : ""} <a href="${WH}/class=${h.cls.wh}/${h.cls.id}" target="_blank" rel="noopener"><b style="color:${h.cls.color}">${h.cls.name}</b></a></span></li>`).join("");
   rolling = false;
   render();
 }
