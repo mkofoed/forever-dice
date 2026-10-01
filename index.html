@@ -321,7 +321,7 @@ h1 {
       <path d="M210 2 219 11 210 20 201 11Z" fill="currentColor"/>
       <circle cx="160" cy="11" r="2" fill="currentColor"/><circle cx="260" cy="11" r="2" fill="currentColor"/>
     </svg>
-    <p class="sub">Let the dice decide the race, class and gender of your next character. Click an option to exclude it. The dice only lands on combinations that actually exist in the game.</p>
+    <p class="sub">Let the dice decide the race, class and body type of your next character. Click an option to exclude it. The dice only lands on combinations that actually exist in the game.</p>
   </header>
 
   <section class="creator">
@@ -376,7 +376,7 @@ h1 {
         <button class="btn" id="copy" disabled>Copy result</button>
         <button class="btn" id="reset">Enable everything</button>
       </div>
-      <label class="toggle"><input type="checkbox" id="rollGender" checked> Also roll gender</label>
+      <label class="toggle"><input type="checkbox" id="rollGender" checked> Also roll body type</label>
     </div>
 
     <div class="panel faction horde" id="horde"></div>
@@ -401,7 +401,7 @@ h1 {
     </div>
     <div class="panel">
       <h2>How it works</h2>
-      <p class="hint">Click a <b>race</b>, <b>class</b> or <b>gender</b> to exclude it. Click <b>Alliance</b> or <b>Horde</b> to toggle the whole faction.</p>
+      <p class="hint">Click a <b>race</b>, <b>class</b> or <b>body type</b> to exclude it. Click <b>Alliance</b> or <b>Horde</b> to toggle the whole faction.</p>
       <p class="hint">Every valid race and class combination has the same chance. Skyborne comes in two versions, High Order (Alliance) and Windshaper (Horde), each with its own classes.</p>
       <p class="hint">Your exclusions are remembered in your own browser.</p>
       <p class="hint">Combinations follow Wowhead's <a href="https://www.wowhead.com/forever/guide/new-race-class-combinations" target="_blank" rel="noopener">race and class combinations</a> guide. See also <a href="https://www.wowhead.com/forever/guide/skyborne-race-overview" target="_blank" rel="noopener">Skyborne overview</a> and <a href="https://www.wowhead.com/forever/spells/racial-traits" target="_blank" rel="noopener">racial traits</a>. Fan-made, not affiliated with Blizzard.</p>
@@ -451,8 +451,8 @@ const RACES = [
   { id: "sky-h", wh: "guide/skyborne-race-overview",     name: "Skyborne",  sub: "Windshaper", faction: "horde", abbr: "Sk", classes: ["warrior","hunter","rogue","shaman","druid"] },
 ];
 const GENDERS = [
-  { id: "male", name: "Male", sym: "♂" },
-  { id: "female", name: "Female", sym: "♀" },
+  { id: "male", name: "Body 1", sym: "♂" },
+  { id: "female", name: "Body 2", sym: "♀" },
 ];
 const WH = "https://www.wowhead.com/forever";
 const FACTION_NAME = { alliance: "Alliance", horde: "Horde" };
@@ -649,7 +649,7 @@ async function roll() {
   const res = $("result");
   if (!pool.length || (state.rollGender && !gPool.length)) {
     res.className = "result error";
-    res.innerHTML = `<span class="line">${!pool.length ? "No race and class combination is left after your exclusions. Enable something again." : "Enable at least one gender, or turn off 'Also roll gender'."}</span>`;
+    res.innerHTML = `<span class="line">${!pool.length ? "No race and class combination is left after your exclusions. Enable something again." : "Enable at least one body type, or turn off 'Also roll body type'."}</span>`;
     return;
   }
   rolling = true;
@@ -712,8 +712,8 @@ async function roll() {
   res.className = "result reveal";
   res.innerHTML = `
     <span class="pre">Your fate is sealed</span>
-    <span class="line">${gender ? `<span style="color:var(--parch)">${gender.name}</span> ` : ""}<span style="color:${FACTION_COLOR[target.race.faction]}">${raceName}</span> <span style="color:${target.cls.color}">${target.cls.name}</span></span>
-    <span class="meta">${EMBLEM[target.race.faction]} ${FACTION_NAME[target.race.faction]} · ${target.cls.role}</span>
+    <span class="line"><span style="color:${FACTION_COLOR[target.race.faction]}">${raceName}</span> <span style="color:${target.cls.color}">${target.cls.name}</span></span>
+    <span class="meta">${EMBLEM[target.race.faction]} ${FACTION_NAME[target.race.faction]}${gender ? " · " + gender.name : ""} · ${target.cls.role}</span>
     <span class="links">
       <a href="${WH}/class=${target.cls.wh}/${target.cls.id}" target="_blank" rel="noopener">${target.cls.name} on Wowhead</a>
       <a href="${WH}/talent-calc/${target.cls.id}" target="_blank" rel="noopener">Talent calculator</a>
@@ -727,14 +727,14 @@ async function roll() {
   state.history.unshift(state.last);
   state.history = state.history.slice(0, 6);
   $("history").innerHTML = state.history.map((h, i) =>
-    `<li><span class="n">${state.history.length - i}.</span>${EMBLEM[h.race.faction]}<span>${h.gender ? h.gender.name + " " : ""}${h.race.name}${h.race.sub ? " (" + h.race.sub + ")" : ""} <a href="${WH}/class=${h.cls.wh}/${h.cls.id}" target="_blank" rel="noopener"><b style="color:${h.cls.color}">${h.cls.name}</b></a></span></li>`).join("");
+    `<li><span class="n">${state.history.length - i}.</span>${EMBLEM[h.race.faction]}<span>${h.race.name}${h.race.sub ? " (" + h.race.sub + ")" : ""} <a href="${WH}/class=${h.cls.wh}/${h.cls.id}" target="_blank" rel="noopener"><b style="color:${h.cls.color}">${h.cls.name}</b></a>${h.gender ? ` <span style="color:var(--muted)">· ${h.gender.name}</span>` : ""}</span></li>`).join("");
   rolling = false;
   render();
 }
 
 function resultText() {
   const l = state.last; if (!l) return "";
-  return `The dice has spoken: I'm playing a ${l.gender ? l.gender.name.toLowerCase() + " " : ""}${l.race.name}${l.race.sub ? " (" + l.race.sub + ")" : ""} ${l.cls.name} (${FACTION_NAME[l.race.faction]}) in WoW Forever.`;
+  return `The dice has spoken: I'm playing a ${l.race.name}${l.race.sub ? " (" + l.race.sub + ")" : ""} ${l.cls.name} (${FACTION_NAME[l.race.faction]}${l.gender ? ", " + l.gender.name : ""}) in WoW Forever.`;
 }
 function toast(msg) {
   const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
