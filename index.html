@@ -246,6 +246,16 @@ h1 {
 .links a::after { content: " ↗"; font-size: .8em; opacity: .7; }
 .history a { color: inherit; text-decoration: none; }
 .history a:hover { text-decoration: underline; }
+.quick { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 18px; }
+.q-group { display: inline-flex; align-items: center; gap: 6px; }
+.q-label { font-family: var(--display); font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-dim); margin-right: 2px; }
+.chip {
+  font: 700 .78rem var(--display); letter-spacing: .05em; color: var(--parch); cursor: pointer;
+  background: rgba(0,0,0,.35); border: 1px solid var(--edge); border-radius: 999px; padding: 4px 12px;
+}
+.chip:hover { border-color: var(--gold); color: var(--gold-hi); }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.q-tip { color: var(--muted); font-size: .85rem; font-style: italic; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .btn {
   font: 700 .82rem var(--display); letter-spacing: .06em; color: var(--gold-hi); cursor: pointer;
@@ -323,6 +333,12 @@ h1 {
     </svg>
     <p class="sub">Let the dice decide the race, class and body type of your next character. Click an option to exclude it. The dice only lands on combinations that actually exist in the game.</p>
   </header>
+
+  <div class="quick" role="group" aria-label="Quick select">
+    <span class="q-group"><span class="q-label">Races</span><button class="chip" type="button" data-all="r" data-on="1">All</button><button class="chip" type="button" data-all="r" data-on="0">None</button></span>
+    <span class="q-group"><span class="q-label">Classes</span><button class="chip" type="button" data-all="c" data-on="1">All</button><button class="chip" type="button" data-all="c" data-on="0">None</button></span>
+    <span class="q-tip">Pick None, then click the few you're torn between.</span>
+  </div>
 
   <section class="creator">
     <div class="panel faction alliance" id="alliance"></div>
@@ -747,6 +763,12 @@ $("copy").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(txt); toast("Copied"); }
   catch (e) { const s = getSelection(); const rg = document.createRange(); rg.selectNodeContents($("result")); s.removeAllRanges(); s.addRange(rg); toast("Selected, press Ctrl+C to copy"); }
 });
+document.querySelectorAll(".chip[data-all]").forEach(b => b.addEventListener("click", () => {
+  if (rolling) return;
+  const list = b.dataset.all === "r" ? RACES.map(r => "r:" + r.id) : CLASSES.map(c => "c:" + c.id);
+  list.forEach(k => b.dataset.on === "1" ? state.off.delete(k) : state.off.add(k));
+  save(); render();
+}));
 $("reset").addEventListener("click", () => { if (rolling) return; state.off.clear(); save(); render(); });
 $("rollGender").addEventListener("change", (e) => { state.rollGender = e.target.checked; save(); render(); });
 document.addEventListener("keydown", (e) => {
