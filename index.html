@@ -355,6 +355,90 @@ h1 {
 
 .toast { position: fixed; z-index: 5; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--stone-2); border: 1px solid var(--gold); color: var(--gold-hi); font-family: var(--display); padding: 8px 16px; border-radius: 3px; font-size: .85rem; box-shadow: 0 6px 20px rgba(0,0,0,.6); }
 
+/* ---------- Phones ---------- */
+button, .chip, .cell, summary { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.mbar { display: none; }
+@media (hover: none) {
+  .die:hover { transform: none; }
+  .opt:hover { border-color: #332c38; background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.4)); }
+}
+@media (max-width: 600px) {
+  body { padding-block: 16px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .wrap { gap: 14px; }
+  .eyebrow { font-size: .65rem; letter-spacing: .24em; }
+  .sub { font-size: .95rem; }
+  .panel { padding: 12px 10px; }
+  .panel::after { inset: -6px; background-size: 11px 11px; }
+
+  .quick { gap: 8px 12px; }
+  .q-tip { font-size: .8rem; }
+  .seg-btn .long { display: none; }
+  .seg-btn { padding: 7px 14px; }
+  .chip { padding: 6px 12px; }
+
+  /* Alliance and Horde side by side, compact rows */
+  .creator { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+  .stage { grid-column: 1 / -1; order: -1; padding: 16px 10px; gap: 12px; }
+  .faction { gap: 8px; padding: 8px; }
+  .faction-head { padding: 6px; gap: 8px; }
+  .faction-head .emblem { width: 28px; height: 28px; }
+  .faction-head h2 { font-size: .8rem; letter-spacing: .1em; }
+  .faction-head small { font-size: .68rem; }
+  .race-list { gap: 5px; }
+  .faction .opt { position: relative; padding: 6px; gap: 7px; min-height: 46px; }
+  .faction .crest { width: 30px; height: 30px; font-size: .68rem; border-width: 1.5px; }
+  .faction .opt .name b { font-size: .9rem; }
+  .faction .opt .name i { font-size: .68rem; }
+  .faction .opt.off::after, .faction .opt.dead::after {
+    position: absolute; top: -7px; right: 4px; margin: 0; font-size: .52rem; padding: 2px 4px;
+  }
+  .faction .opt.dead::after { background: var(--stone); }
+
+  .altar { width: 172px; height: 172px; }
+  .die { width: 116px; height: 116px; }
+  .result { min-height: 96px; padding: 4px; }
+  .links { gap: 6px 12px; }
+
+  /* Classes */
+  .classes { gap: 10px; }
+  .legend { font-size: .76rem; gap: 6px; }
+  .class-row { gap: 6px; }
+  .class-row .opt { padding: 10px 2px 8px; gap: 5px; min-height: 92px; }
+  .class-row .crest { width: 42px; height: 42px; }
+  .class-row .crest svg { width: 24px; height: 24px; }
+  .class-row .name b { font-size: .82rem; }
+  .class-row .name i { display: none; }
+
+  /* Combo matrix: icons only, sticky race column */
+  .combos-panel summary { padding: 14px 12px; font-size: .8rem; letter-spacing: .12em; }
+  .combos-body { padding: 0 8px 12px; }
+  .matrix { border-spacing: 1px 2px; margin: 0 auto; }
+  .matrix .ci-name { display: none; }
+  .matrix thead .ci svg { width: 18px; height: 18px; }
+  .matrix td, .matrix th { padding: 0; }
+  .matrix tbody th { position: sticky; left: 0; z-index: 1; background: var(--stone); font-size: .7rem; padding-right: 4px; white-space: normal; line-height: 1.1; }
+  .matrix thead th:first-child { position: sticky; left: 0; z-index: 1; background: var(--stone); }
+  .matrix tbody th small { display: block; margin: 0; font-size: .64rem; }
+  .cell { width: 23px; height: 30px; }
+  .cell::before { width: 8px; height: 8px; }
+
+  .foot { gap: 14px; }
+  .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Floating roll button, shown once the dice scrolls out of view */
+  .mbar {
+    display: flex; justify-content: center; position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(7,7,12,0), rgba(7,7,12,.92) 40%);
+    transform: translateY(110%); transition: transform .25s ease; pointer-events: none;
+  }
+  .mbar.show { transform: none; pointer-events: auto; }
+  .mroll { width: 100%; max-width: 420px; padding: 14px; font-size: 1rem; letter-spacing: .12em; text-transform: uppercase; }
+}
+@media (max-width: 360px) {
+  .faction .crest { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .die.land, .altar.flash::after, .opt.chosen .crest, .opt.chosen, .result.reveal, .result.reveal::before { animation: none; }
   * { transition: none !important; }
@@ -363,6 +447,7 @@ h1 {
 </head><body>
 
 <canvas id="fx" aria-hidden="true"></canvas>
+<div class="mbar" id="mbar"><button class="btn mroll" type="button" id="mroll" tabindex="-1">Roll the dice</button></div>
 <div class="vignette" aria-hidden="true"></div>
 
 <div class="wrap">
@@ -385,9 +470,9 @@ h1 {
     <span class="q-group" role="radiogroup" aria-label="Odds">
       <span class="q-label">Odds</span>
       <span class="seg">
-        <button class="seg-btn" type="button" role="radio" data-mode="combo" title="Every valid race and class combination has the same chance">Every combo</button>
-        <button class="seg-btn" type="button" role="radio" data-mode="race" title="Pick a random race first, then one of its classes">Every race</button>
-        <button class="seg-btn" type="button" role="radio" data-mode="class" title="Pick a random class first, then a race that can play it">Every class</button>
+        <button class="seg-btn" type="button" role="radio" data-mode="combo" title="Every valid race and class combination has the same chance"><span class="long">Every </span>combo</button>
+        <button class="seg-btn" type="button" role="radio" data-mode="race" title="Pick a random race first, then one of its classes"><span class="long">Every </span>race</button>
+        <button class="seg-btn" type="button" role="radio" data-mode="class" title="Pick a random class first, then a race that can play it"><span class="long">Every </span>class</button>
       </span>
     </span>
     <span class="q-tip" id="modeTip"></span>
@@ -590,7 +675,7 @@ CLASSES.forEach(c => {
 
 function buildMatrix() {
   const t = $("matrix");
-  let h = "<thead><tr><th></th>" + CLASSES.map(c => `<th scope="col"><span class="ci" style="--c:${c.color}">${icon(c.id)}${c.name}</span></th>`).join("") + "</tr></thead><tbody>";
+  let h = "<thead><tr><th></th>" + CLASSES.map(c => `<th scope="col"><span class="ci" style="--c:${c.color}" title="${c.name}">${icon(c.id)}<span class="ci-name">${c.name}</span></span></th>`).join("") + "</tr></thead><tbody>";
   RACES.forEach((r, i) => {
     const split = i > 0 && RACES[i - 1].faction !== r.faction ? ' class="split"' : "";
     h += `<tr${split}><th scope="row" class="${r.faction}-r">${r.name}${r.sub ? `<small>${r.sub}</small>` : ""}</th>`;
@@ -882,6 +967,18 @@ function toast(msg) {
 }
 
 $("die").addEventListener("click", roll);
+$("mroll").addEventListener("click", () => {
+  if (rolling) return;
+  document.querySelector(".stage").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  setTimeout(roll, reduce ? 0 : 350);
+});
+if ("IntersectionObserver" in window) {
+  new IntersectionObserver(([e]) => {
+    const show = !e.isIntersecting;
+    $("mbar").classList.toggle("show", show);
+    $("mroll").tabIndex = show ? 0 : -1;
+  }).observe($("die"));
+}
 $("copy").addEventListener("click", async () => {
   const txt = resultText();
   try { await navigator.clipboard.writeText(txt); toast("Copied"); }
